@@ -6,11 +6,13 @@
 #include <sourcebanspp>
 #include <autoexecconfig>
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 Database g_DB;
 ConVar g_cvWebhook;
+ConVar g_cvEmbedColor;
 char g_cWebhook[512];
+char g_cEmbedColor[32];
 
 enum struct PlayerInfo {
 	char Name[32];
@@ -29,6 +31,12 @@ public Plugin myinfo =
 	url = "https://electricservers.com.ar"
 };
 
+public void OnAllPluginsLoaded() {
+	if (!LibraryExists("whois")) {
+		SetFailState("This plugin depends on the WhoIs plugin. Please install it first.\nhttps://github.com/maxijabase/sm-whois");
+	}
+}
+
 public void OnPluginStart() {
 	AutoExecConfig_SetCreateFile(true);
 	AutoExecConfig_SetFile("altnotice");
@@ -37,6 +45,11 @@ public void OnPluginStart() {
 	
 	g_cvWebhook.GetString(g_cWebhook, sizeof(g_cWebhook));
 	g_cvWebhook.AddChangeHook(OnWebhookChange);
+	
+	g_cvEmbedColor = AutoExecConfig_CreateConVar("sm_altnotice_embedcolor", "3447003", "Embed color.");
+	
+	g_cvEmbedColor.GetString(g_cEmbedColor, sizeof(g_cEmbedColor));
+	g_cvEmbedColor.AddChangeHook(OnEmbedColorChange);
 	
 	Database.Connect(SQL_OnDatabaseConnect, "whois");
 	
@@ -110,12 +123,10 @@ void SendDiscordMessage(PlayerInfo player) {
 	DiscordWebHook hook = new DiscordWebHook(g_cWebhook);
 	hook.SlackMode = true;
 	
-	hook.SetUsername("Electric Servers");
-	
 	MessageEmbed embed = new MessageEmbed();
 	
 	// Set color
-	embed.SetColor("15905574");
+	embed.SetColor(g_cEmbedColor);
 	
 	// Set title
 	char bantime[32];
@@ -155,4 +166,8 @@ void SendDiscordMessage(PlayerInfo player) {
 
 public void OnWebhookChange(ConVar convar, const char[] oldValue, const char[] newValue) {
 	strcopy(g_cWebhook, sizeof(g_cWebhook), newValue);
+}
+
+public void OnEmbedColorChange(ConVar convar, const char[] oldValue, const char[] newValue) {
+	strcopy(g_cEmbedColor, sizeof(g_cEmbedColor), newValue);
 }
